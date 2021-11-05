@@ -16,3 +16,96 @@ add_action('carbon_fields_register_fields', function () {
       Field::make('text', 'crb_text', 'Text Field'),
     ]);
 });
+
+function  create_post_type() {
+
+  $labels = array(
+    'name'                => _x( 'products', 'devbackend' ),
+    'singular_name'       => _x( 'product', 'devbackend' ),
+    'menu_name'           => __( 'Products' ),
+    'parent_item_colon'   => __( 'Parent Product' ),
+    'all_items'           => __( 'All Products' ),
+    'view_item'           => __( 'View Product' ),
+    'add_new_item'        => __( 'Add New Product' ),
+    'add_new'             => __( 'Add New Product' ),
+    'edit_item'           => __( 'Edit Product' ),
+    'update_item'         => __( 'Update Product' ),
+    'search_items'        => __( 'Search Product' ),
+  );
+
+  $args = array(
+    'label'               => __( 'Products' ),
+    'description'         => __( 'Holds your products and product-specific data' ),
+    'labels'              => $labels,
+    'supports'            => array( 'title', 'editor', 'excerpt', 'author',
+      'thumbnail', 'comments', 'revisions', 'custom-fields', 'page-attributes',
+      'post-formats' ),
+    'public'              => true,
+    'menu_position'       => 5,
+    'has_archive'         => true,
+    'show_in_rest'        => true,
+    'show_in_admin_bar'   => true,
+    'show_in_nav_menus'   => true,
+    'rewrite'             => array('slug' => 'products'),
+    'capacility_type'     => 'post',
+    'show_in_graphql'     => true,
+    'hierarchical'        => true,
+    'graphql_single_name' => 'product',
+    'graphql_plural_name' => 'products',
+  );
+
+  register_post_type( 'product', $args );
+}
+
+add_action( 'init', 'create_post_type');
+
+function create_image_and_relationship() {
+  Container::make( 'post_meta', 'Custom Data' )
+    ->where( 'post_type', '=', 'product' )
+    ->add_fields( array(
+      Field::make( 'image', 'crb_image' ),
+      Field::make( 'association', 'crb_association', __( 'Association' ) )
+        ->set_types( array(
+          array(
+            'type'      => 'post',
+            'post_type' => 'post',
+          ),
+        )),
+    ));
+  Container::make( 'post_meta', 'Custom Data' )
+    ->where( 'post_type', '=', 'post' )
+    ->add_fields( array(
+      Field::make( 'association', 'crb_association', __( 'Association' ) )
+        ->set_types( array(
+          array(
+            'type'      => 'post',
+            'post_type' => 'product',
+          ),
+        ))->set_max(1)
+    ));
+};
+
+add_action('carbon_fields_register_fields', 'create_image_and_relationship' );
+
+function register_graphql_product_image_connection() {
+
+  $config = [
+  'fromType'           => 'product',
+  'toType'             => 'MediaItem',
+  'fromFieldName'      => 'image',
+  'connectionTypeName' => 'ProductImageConnection',
+  'connectionArgs' => \WPGraphQL\Connection\PostObjects::get_connection_args(),
+  'resolve'            => function( \WPGraphQL\Model\Post $source, $args, $context, $info ) {
+    $resolver   = new \WPGraphQL\Data\Connection\PostObjectConnectionResolver( $source, $args, $context, $info, 'attachment' );
+    $resolver->set_query_arg( 'post_parent', $source->ID );
+    $connection = $resolver->get_connection();
+
+    return $connection;
+    }
+  ];
+
+  register_graphql_connection( $config );
+
+};
+
+add_action( 'graphql_register_types', 'register_graphql_product_image_connection', 99 );
