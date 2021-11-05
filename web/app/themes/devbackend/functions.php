@@ -20,7 +20,7 @@ add_action('carbon_fields_register_fields', function () {
 function  create_post_type() {
 
   $labels = array(
-    'name'                => _x( 'products', 'devbackend' ),
+    'name'                => _x( 'product', 'devbackend' ),
     'singular_name'       => _x( 'product', 'devbackend' ),
     'menu_name'           => __( 'Products' ),
     'parent_item_colon'   => __( 'Parent Product' ),
@@ -46,18 +46,29 @@ function  create_post_type() {
     'show_in_rest'        => true,
     'show_in_admin_bar'   => true,
     'show_in_nav_menus'   => true,
-    'rewrite'             => array('slug' => 'products'),
+    'rewrite'             => array('slug' => 'product'),
     'capacility_type'     => 'post',
-    'show_in_graphql'     => true,
-    'hierarchical'        => true,
-    'graphql_single_name' => 'product',
-    'graphql_plural_name' => 'products',
   );
 
   register_post_type( 'product', $args );
 }
 
 add_action( 'init', 'create_post_type');
+
+function create_product_in_graphql() {
+  register_post_type( 'product', [
+    'show_ui' => true,
+    'labels'  => [
+      'menu_name' => __( 'product', 'http://localhost:8080' ),
+    ],
+    'show_in_graphql'     => true,
+    'hierarchical'        => true,
+    'graphql_single_name' => 'product',
+    'graphql_plural_name' => 'products',
+  ] );
+};
+
+add_action( 'init', 'create_product_in_graphql');
 
 function create_image_and_relationship() {
   Container::make( 'post_meta', 'Custom Data' )
@@ -81,7 +92,7 @@ function create_image_and_relationship() {
             'type'      => 'post',
             'post_type' => 'product',
           ),
-        ))->set_max(1)
+        )),
     ));
 };
 
@@ -97,11 +108,11 @@ function register_graphql_product_image_connection() {
   'connectionArgs' => \WPGraphQL\Connection\PostObjects::get_connection_args(),
   'resolve'            => function( \WPGraphQL\Model\Post $source, $args, $context, $info ) {
     $resolver   = new \WPGraphQL\Data\Connection\PostObjectConnectionResolver( $source, $args, $context, $info, 'attachment' );
-    $resolver->set_query_arg( 'post_parent', $source->ID );
+    $resolver->set_query_arg( 'post__in', array( get_post_meta($source->ID, 'crb_image', true )) );
     $connection = $resolver->get_connection();
 
     return $connection;
-    }
+    },
   ];
 
   register_graphql_connection( $config );
