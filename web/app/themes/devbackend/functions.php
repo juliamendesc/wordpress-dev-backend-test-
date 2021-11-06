@@ -17,11 +17,19 @@ add_action('carbon_fields_register_fields', function () {
     ]);
 });
 
+add_action( 'init', 'create_post_type');
+
+add_action( 'init', 'create_product_in_graphql');
+
+add_action('carbon_fields_register_fields', 'create_image_and_relationship' );
+
+add_action( 'graphql_register_types', 'register_graphql_product_image_connection', 99 );
+
 function  create_post_type() {
 
   $labels = array(
-    'name'                => _x( 'product', 'devbackend' ),
-    'singular_name'       => _x( 'product', 'devbackend' ),
+    'name'                => _x( 'Products', 'devbackend' ),
+    'singular_name'       => _x( 'Product', 'devbackend' ),
     'menu_name'           => __( 'Products' ),
     'parent_item_colon'   => __( 'Parent Product' ),
     'all_items'           => __( 'All Products' ),
@@ -35,31 +43,29 @@ function  create_post_type() {
 
   $args = array(
     'label'               => __( 'Products' ),
-    'description'         => __( 'Holds your products and product-specific data' ),
     'labels'              => $labels,
+    'description'         => __( 'Holds your products and product-specific data' ),
     'supports'            => array( 'title', 'editor', 'excerpt', 'author',
       'thumbnail', 'comments', 'revisions', 'custom-fields', 'page-attributes',
       'post-formats' ),
     'public'              => true,
-    'menu_position'       => 5,
+    'menu_position'       => 3,
     'has_archive'         => true,
     'show_in_rest'        => true,
-    'show_in_admin_bar'   => true,
-    'show_in_nav_menus'   => true,
+    // 'show_in_admin_bar'   => true,
+    // 'show_in_nav_menus'   => true,
     'rewrite'             => array('slug' => 'product'),
-    'capacility_type'     => 'post',
+    // 'capacility_type'     => 'post',
   );
 
   register_post_type( 'product', $args );
 }
 
-add_action( 'init', 'create_post_type');
-
 function create_product_in_graphql() {
   register_post_type( 'product', [
     'show_ui' => true,
     'labels'  => [
-      'menu_name' => __( 'product', 'http://localhost:8080' ),
+      'menu_name' => __( 'Products', 'http://localhost:8080' ),
     ],
     'show_in_graphql'     => true,
     'hierarchical'        => true,
@@ -68,13 +74,11 @@ function create_product_in_graphql() {
   ] );
 };
 
-add_action( 'init', 'create_product_in_graphql');
-
 function create_image_and_relationship() {
   Container::make( 'post_meta', 'Custom Data' )
     ->where( 'post_type', '=', 'product' )
     ->add_fields( array(
-      Field::make( 'image', 'crb_image' ),
+      Field::make( 'image', 'crb_image', __( 'Image' )  ),
       Field::make( 'association', 'crb_association', __( 'Association' ) )
         ->set_types( array(
           array(
@@ -96,8 +100,6 @@ function create_image_and_relationship() {
     ));
 };
 
-add_action('carbon_fields_register_fields', 'create_image_and_relationship' );
-
 function register_graphql_product_image_connection() {
 
   $config = [
@@ -118,5 +120,3 @@ function register_graphql_product_image_connection() {
   register_graphql_connection( $config );
 
 };
-
-add_action( 'graphql_register_types', 'register_graphql_product_image_connection', 99 );
