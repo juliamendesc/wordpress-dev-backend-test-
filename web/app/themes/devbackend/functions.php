@@ -108,7 +108,7 @@ function register_graphql_product_image_connection() {
   'connectionArgs' => \WPGraphQL\Connection\PostObjects::get_connection_args(),
   'resolve'            => function( \WPGraphQL\Model\Post $source, $args, $context, $info ) {
     $resolver   = new \WPGraphQL\Data\Connection\PostObjectConnectionResolver( $source, $args, $context, $info, 'attachment' );
-    $resolver->set_query_arg( 'post__in', array( get_post_meta($source->ID, 'crb_image', true )) );
+    $resolver->set_query_arg( 'post__in', array( get_post_meta($source->ID, '_crb_image', true )) );
     $connection = $resolver->get_connection();
 
     return $connection;
