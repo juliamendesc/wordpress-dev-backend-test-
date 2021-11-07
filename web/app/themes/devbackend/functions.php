@@ -26,7 +26,8 @@ add_action('carbon_fields_register_fields', function () {
 **				* With the previous step, it is possible to activate the
 **				plugin desired;
 **				* We then change to the desired theme with the switch_theme
-**				function.
+**				function, which will only happen if the theme is not
+**				the current activated one.
 */
 
 require_once( ABSPATH . 'wp-admin/includes/plugin.php' );
@@ -39,7 +40,7 @@ if (file_exists($plugin_dir) && !is_plugin_active($plugin_filepath))
 activate_my_theme('devbackend');
 
 function activate_my_theme($theme_name) {
-  if ($theme_name!=get_current_theme()) {
+  if ($theme_name!=wp_get_theme()) {
     $theme = get_theme($theme_name);
     switch_theme(
       $theme['Template'],
@@ -136,10 +137,15 @@ Container::make( 'post_meta', 'Custom Data' )
 **			This add_action hook will comprise the creation of the following:
 **				* Field image in Product Custom Type
 **				* Field Posts in Product Custom Type
-**				* Field Product in Posts Type
+**				* Field Product in Post Type
 */
 
 add_action( 'graphql_register_types', function() {
+
+	/*
+**				Product -> Image
+*/
+
 	register_graphql_connection([
 		'fromType'           => 'product',
 		'toType'             => 'MediaItem',
@@ -154,30 +160,37 @@ add_action( 'graphql_register_types', function() {
 		},
 	]);
 
+/*
+**				Product -> Posts
+*/
+
 	register_graphql_connection([
-		'fromType'           => 'product',
+		'fromType'           => 'Product',
 		'toType'             => 'Post',
 		'fromFieldName'      => 'posts',
 		'connectionTypeName' => 'ProductPostsConnection',
 		'connectionArgs'     => \WPGraphQL\Connection\PostObjects::get_connection_args(),
 		'resolve'            => function( \WPGraphQL\Model\Post $source, $args, $context, $info ) {
 			$resolver          = new \WPGraphQL\Data\Connection\PostObjectConnectionResolver( $source, $args, $context, $info, 'post' );
+			$resolver->set_query_arg('meta_value', $source->ID);
+			$connection = $resolver->get_connection();
+			return $connection;
+		},
+	]);
 
-			$associated_posts  = new WP_Query( array(
-				'post_type'      => 'product',
-				'meta_query'     => array(
-					array(
-						'key' => '_crb_association_post_product',
-						'compare' => 'EXISTS',
-					),
-				),
-			) );
+/*
+**				Post -> Product
+*/
 
-			if ( empty( $associated_posts ) ) {
-				return null;
-			 }
-
-			$resolver->set_query_arg( 'post_in', $associated_posts );
+	register_graphql_connection([
+		'fromType'           => 'Post',
+		'toType'             => 'Product',
+		'fromFieldName'      => 'product',
+		'connectionTypeName' => 'PostProductConnection',
+		'connectionArgs'     => \WPGraphQL\Connection\PostObjects::get_connection_args(),
+		'resolve'            => function( \WPGraphQL\Model\Post $source, $args, $context, $info ) {
+			$resolver          = new \WPGraphQL\Data\Connection\PostObjectConnectionResolver( $source, $args, $context, $info, 'product' );
+			$resolver->set_query_arg('meta_value', $source->ID);
 			$connection = $resolver->get_connection();
 			return $connection;
 		},
