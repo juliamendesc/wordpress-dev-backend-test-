@@ -21,11 +21,11 @@ add_action('carbon_fields_register_fields', function () {
 **				# Auto activation of plugins and theme after installation #
 **
 **				This configuration will auto activate the theme and plugins
-**					* ABSPATH allows for pointing to wordpress root directory
+**				* ABSPATH allows for pointing to wordpress root directory
 **				without the need to change its files directly;
-**					* With the previous step, it is possible to activate the
+**				* With the previous step, it is possible to activate the
 **				plugin desired;
-**					* We then change to the desired theme with the switch_theme
+**				* We then change to the desired theme with the switch_theme
 **				function, which will only happen if the theme is not
 **				the current activated one.
 */
