@@ -18,20 +18,19 @@ add_action('carbon_fields_register_fields', function () {
 });
 
 /*
-**						# Auto activation of plugins and theme after installation #
+**				# Auto activation of plugins and theme after installation #
 **
-**			This configuration will auto activate the theme and plugins
-**				* ABSPATH allows for pointing to wordpress root directory
-**				without the need to change its files directly;
-**				* With the previous step, it is possible to activate the
-**				plugin desired;
-**				* We then change to the desired theme with the switch_theme
-**				function, which will only happen if the theme is not
-**				the current activated one.
+**				This configuration will auto activate the theme and plugins
+**					* ABSPATH allows for pointing to wordpress root directory
+**					without the need to change its files directly;
+**					* With the previous step, it is possible to activate the
+**					plugin desired;
+**					* We then change to the desired theme with the switch_theme
+**					function, which will only happen if the theme is not
+**					the current activated one.
 */
 
 require_once( ABSPATH . 'wp-admin/includes/plugin.php' );
-//add_action( 'init', activate_plugin( 'wp-graphql/wp-graphql.php') );
 $plugin_filepath = 'wp-graphql/wp-graphql.php';
 $plugin_dir = WP_PLUGIN_DIR . "/{$plugin_filepath}";
 if (file_exists($plugin_dir) && !is_plugin_active($plugin_filepath))
@@ -50,7 +49,7 @@ function activate_my_theme($theme_name) {
 }
 
 /*
-**						# Custom Post Type creation #
+**				# Custom Post Type creation #
 */
 
 add_action( 'init', function() {
@@ -85,7 +84,7 @@ add_action( 'init', function() {
 } );
 
 /*
-**						# GraphQL Custom Post Type creation #
+**				# GraphQL Custom Post Type creation #
 */
 
 add_action( 'init', function() {
@@ -102,7 +101,7 @@ add_action( 'init', function() {
 } );
 
 /*
-**						# Creation of custom field image and associations #
+**				# Creation of custom field image and associations #
 */
 
 add_action('carbon_fields_register_fields', function() {
@@ -118,6 +117,7 @@ add_action('carbon_fields_register_fields', function() {
 				),
 			)),
 	));
+
 Container::make( 'post_meta', 'Custom Data' )
 	->where( 'post_type', '=', 'post' )
 	->add_fields( array(
@@ -127,17 +127,32 @@ Container::make( 'post_meta', 'Custom Data' )
 				'type'      => 'post',
 				'post_type' => 'product',
 			),
-		))->set_max( 1 )
+		))->set_max( 1 ),
 	));
 });
 
 /*
-**						# Create Fields in other Custom Types #
+**				# Unsuccessful attempt to task #4 #
 **
-**			This add_action hook will comprise the creation of the following:
-**				* Field image in Product Custom Type
-**				* Field Posts in Product Custom Type
-**				* Field Product in Post Type
+
+/* add_action('carbon_fields_post_meta_container_saved', function() {
+	if(get_post_type($post_id) == 'post' && carbon_get_post_meta( get_the_ID(), 'crb_association_post_product' ))
+	{
+		carbon_set_post_meta($post_id, 'crb_association_product_post')[0]['id'];
+	}
+	else if (get_post_type($post_id) == 'product' && carbon_get_post_meta( get_the_ID(), 'crb_association_product_post' ))
+	{
+		carbon_set_post_meta($post_id, 'crb_association_post_product')[0]['id'];
+	}
+}); */
+
+/*
+**				# Create Fields in other Custom Types #
+**
+**				This add_action hook will comprise the creation of the following:
+**					* Field image in Product Custom Type
+**					* Field Posts in Product Custom Type
+**					* Field Product in Post Type
 */
 
 add_action( 'graphql_register_types', function() {
@@ -154,7 +169,7 @@ add_action( 'graphql_register_types', function() {
 		'connectionArgs'     => \WPGraphQL\Connection\PostObjects::get_connection_args(),
 		'resolve'            => function( \WPGraphQL\Model\Post $source, $args, $context, $info ) {
 			$resolver          = new \WPGraphQL\Data\Connection\PostObjectConnectionResolver( $source, $args, $context, $info, 'attachment' );
-			$resolver->set_query_arg( 'post__in', array( get_post_meta( $source->ID, '_crb_image', true )) );
+			$resolver->set_query_arg( 'post__in', array( carbon_get_post_meta( $source->ID, 'crb_image' )) );
 			$connection = $resolver->get_connection();
 			return $connection;
 		},
@@ -172,7 +187,7 @@ add_action( 'graphql_register_types', function() {
 		'connectionArgs'     => \WPGraphQL\Connection\PostObjects::get_connection_args(),
 		'resolve'            => function( \WPGraphQL\Model\Post $source, $args, $context, $info ) {
 			$resolver          = new \WPGraphQL\Data\Connection\PostObjectConnectionResolver( $source, $args, $context, $info, 'post' );
-			$resolver->set_query_arg('meta_value', $source->ID);
+			$resolver->set_query_arg( 'meta_value', $source->ID );
 			$connection = $resolver->get_connection();
 			return $connection;
 		},
@@ -190,7 +205,7 @@ add_action( 'graphql_register_types', function() {
 		'connectionArgs'     => \WPGraphQL\Connection\PostObjects::get_connection_args(),
 		'resolve'            => function( \WPGraphQL\Model\Post $source, $args, $context, $info ) {
 			$resolver          = new \WPGraphQL\Data\Connection\PostObjectConnectionResolver( $source, $args, $context, $info, 'product' );
-			$resolver->set_query_arg('meta_value', $source->ID);
+			$resolver->set_query_arg( 'meta_value', $source->ID );
 			$connection = $resolver->get_connection();
 			return $connection;
 		},
